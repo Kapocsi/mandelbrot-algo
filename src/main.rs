@@ -1,3 +1,5 @@
+#![deny(clippy::unwrap_used)]
+
 use std::process::Command;
 
 use num::{complex::Complex64, ToPrimitive};
@@ -22,10 +24,12 @@ fn get_escape_value(c: Complex64, limit: u16) -> u16 {
 
 fn generate_mandelbrot_grid(resolution: u32, offset_x: f64, offset_y: f64, zoom: f64) -> Vec<u16> {
     // disbale offset
-    (0..=resolution.pow(2))
-        .into_par_iter()
+   
+    // initalize list 
+    let mand : Vec<u32>= (0..=resolution.pow(2)).collect();
+
+    mand.par_iter()
         .filter_map(|i| {
-            let i = i.to_u32()?;
             let col = 2.0 * ((i % resolution).to_f64()? / resolution.to_f64()? - 0.5);
             let row = 2.0 * ((i / resolution).to_f64()? / resolution.to_f64()? - 0.5);
 
@@ -36,6 +40,7 @@ fn generate_mandelbrot_grid(resolution: u32, offset_x: f64, offset_y: f64, zoom:
                     im: (row / zoom) - offset_y,
                 },
                 765,
+                
             );
             Some(value + (row.abs() + col.abs()).to_u16()?)
         })
@@ -43,7 +48,7 @@ fn generate_mandelbrot_grid(resolution: u32, offset_x: f64, offset_y: f64, zoom:
 }
 
 fn main() {
-    let image_size: u32 = (2 as u32).pow(12);
+    let image_size: u32 = (2 as u32).pow(15);
     let grid = generate_mandelbrot_grid(image_size, 0.0, 0.0, 1.0);
     let mut img = ImageBuffer::new(image_size + 1, image_size + 1);
     // Split number up to 768 into 3 buckets that flow into each other
@@ -67,5 +72,9 @@ fn main() {
 
     img.save(format!("result_{}.png", image_size)).unwrap();
 
-    Command::new("open").arg(format!("result_{}.png", image_size));
+    // open the file
+    Command::new("open")
+        .arg(format!("result_{}.png", image_size))
+        .spawn()
+        .unwrap();
 }
